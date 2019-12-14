@@ -1,0 +1,5 @@
+---
+applications:
+- name: SamlGen
+  memory: 512M
+  instances: 1
