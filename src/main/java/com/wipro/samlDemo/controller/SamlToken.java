@@ -1,5 +1,6 @@
 package com.wipro.samlDemo.controller;
 
+import java.net.URL;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -35,6 +36,7 @@ import org.opensaml.xml.signature.SignatureException;
 import org.opensaml.xml.signature.Signer;
 import org.opensaml.xml.util.XMLHelper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Element;
@@ -49,6 +51,9 @@ public class SamlToken {
 	@Autowired
 	Utilily utility;
 
+/*	@Autowired
+ResourceLoader resourceLoader;*/
+	
 	@GetMapping(value="/saml")
 	public String samlToken() throws Exception {
 		
@@ -87,8 +92,8 @@ public class SamlToken {
 		/* Create and add subject to assertion */
 		SubjectBean subjectBean = new SubjectBean();
 		subjectBean.setSubjectName("Amit Kumar");
+		
 		Subject subject = SAMLUtil.getSubject(subjectBean);
-
 		/* Create SubjectConfirmation Object */
 		// Create SubjectConfirmationDataBean
 		SubjectConfirmationDataBean subjectConfirmationDataBean = new SubjectConfirmationDataBean();
@@ -98,16 +103,14 @@ public class SamlToken {
 		subjectConfirmationDataBean.setNotAfter(afterTime);
 		subjectConfirmationDataBean.setNotBefore(dateTime);
 		subjectConfirmationDataBean.setRecipient("http://abc.com");
-
 		// Initialize SubjectConfirmationData
 		SubjectConfirmationData subjectConfirmationData = SAMLUtil
 				.getSubjectConfirmationData(subjectConfirmationDataBean, null);
-
 		// Initialize SubjectConfirmation
 		SubjectConfirmation subjectConfirmation = SAMLUtil
 				.getSubjectConfirmation("urn:oasis:names:tc:SAML:2.0:cm:bearer", subjectConfirmationData);
-
 		subject.getSubjectConfirmations().add(subjectConfirmation);
+		
 		assertion.setSubject(subject);
 
 	}
@@ -181,13 +184,24 @@ public class SamlToken {
 
 	public  Signature getSignature() throws Exception {
 		
+	//	InputStream filePath = resourceLoader.getResource("classpath:SAML/keystore.jks").getInputStream();
+		//System.out.println("amittttttt"+filePath.getClass().getClassLoader().getResourceAsStream("keystore.jks"));
+	//BufferedReader	reader = new BufferedReader(new InputStreamReader(filePath));
+		//System.out.println(reader.readLine().);
+		//System.out.println("path::::"+Paths.get("src/main/resorces/SAML/keystore.jks").toString());
+		
+		
+		/*ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		URL resource = classLoader.getResource("SAML/keystore.jks");
+		System.out.println("kdkwejd"+resource.getPath());
+		*/
 		KeyPair keyPair = PublicKeyUtil.getKeyPairFromKeyStore(utility.getKeyStoreFilePath(),utility.getKeyStorePassword(),utility.getKeyPassword(), utility.getKeyAlias());
 
 		PrivateKey pk = keyPair.getPrivate();
 
 		KeyStore ks = PublicKeyUtil.getKeyStore(utility.getKeyStoreFilePath(), utility.getKeyStorePassword());
 
-		X509Certificate certificate = PublicKeyUtil.getX509Certificate(ks, utility.getKeyAlias(), utility.getKeyStorePassword());
+		X509Certificate certificate = PublicKeyUtil.getX509Certificate(ks, utility.getKeyAlias(), utility.getKeyPassword());
 
 		BasicX509Credential signingCredential = new BasicX509Credential();
 		signingCredential.setEntityCertificate(certificate);
