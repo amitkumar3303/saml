@@ -54,6 +54,43 @@ public class SamlToken {
 /*	@Autowired
 ResourceLoader resourceLoader;*/
 	
+	@GetMapping(value="/saml1")
+	public Response samlToken1() throws Exception {
+		
+		
+		
+		
+		
+		//utility.get
+		/* Initializes the OpenSAML library */
+		DefaultBootstrap.bootstrap();
+
+		/* Create assertion */
+		Assertion assertion = SAMLUtil.getAssertion();
+
+		/* Add elements to assertion */
+		addSubjectToAssertion(assertion);
+		addConditionsToAssertion(assertion);
+		addAuthenticationStatement(assertion);
+		addSignatureToAssertion(assertion);
+
+		/* Create Response object */
+		Response resp = (Response) Configuration.getBuilderFactory().getBuilder(Response.DEFAULT_ELEMENT_NAME)
+				.buildObject(Response.DEFAULT_ELEMENT_NAME);
+		
+		/* Add assertion to response */
+		resp.getAssertions().add(assertion);
+		// addSignatureToResponse(resp);
+
+		ResponseMarshaller marshaller = new ResponseMarshaller();
+		Element plain = marshaller.marshall(resp);
+
+		String samlResponse = XMLHelper.nodeToString(plain);
+	
+		//System.out.println(samlResponse);
+		return resp;	
+		
+	}
 	@GetMapping(value="/saml")
 	public String samlToken() throws Exception {
 		
