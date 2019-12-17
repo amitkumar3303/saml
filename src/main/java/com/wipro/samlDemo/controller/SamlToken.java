@@ -47,21 +47,32 @@ import com.wipro.samlDemo.util.Utilily;
 
 @RestController
 public class SamlToken {
-	
+
 	@Autowired
 	Utilily utility;
-
-/*	@Autowired
-ResourceLoader resourceLoader;*/
 	
-	@GetMapping(value="/saml1")
+	@Autowired
+	ResponseValidator responseValidator;
+
+	@GetMapping(value = "/soap")
+	public Response samlToken2(Response response) throws Exception {
+
+		boolean validationResult = responseValidator.validateSignature(response);
+		if (validationResult) {
+			// call soap service
+
+		} else {
+			// return validation fail
+		}
+
+		return response;
+
+	}
+
+	@GetMapping(value = "/saml1")
 	public Response samlToken1() throws Exception {
-		
-		
-		
-		
-		
-		//utility.get
+
+		// utility.get
 		/* Initializes the OpenSAML library */
 		DefaultBootstrap.bootstrap();
 
@@ -77,7 +88,7 @@ ResourceLoader resourceLoader;*/
 		/* Create Response object */
 		Response resp = (Response) Configuration.getBuilderFactory().getBuilder(Response.DEFAULT_ELEMENT_NAME)
 				.buildObject(Response.DEFAULT_ELEMENT_NAME);
-		
+
 		/* Add assertion to response */
 		resp.getAssertions().add(assertion);
 		// addSignatureToResponse(resp);
@@ -86,15 +97,16 @@ ResourceLoader resourceLoader;*/
 		Element plain = marshaller.marshall(resp);
 
 		String samlResponse = XMLHelper.nodeToString(plain);
-	
-		//System.out.println(samlResponse);
-		return resp;	
-		
+
+		// System.out.println(samlResponse);
+		return resp;
+
 	}
-	@GetMapping(value="/saml")
+
+	@GetMapping(value = "/saml")
 	public String samlToken() throws Exception {
-		
-		//utility.get
+
+		// utility.get
 		/* Initializes the OpenSAML library */
 		DefaultBootstrap.bootstrap();
 
@@ -119,17 +131,17 @@ ResourceLoader resourceLoader;*/
 		Element plain = marshaller.marshall(resp);
 
 		String samlResponse = XMLHelper.nodeToString(plain);
-	
-		//System.out.println(samlResponse);
-		return samlResponse;	
-		
+
+		// System.out.println(samlResponse);
+		return samlResponse;
+
 	}
 
-	public  void addSubjectToAssertion(Assertion assertion) throws SecurityException, WSSecurityException {
+	public void addSubjectToAssertion(Assertion assertion) throws SecurityException, WSSecurityException {
 		/* Create and add subject to assertion */
 		SubjectBean subjectBean = new SubjectBean();
 		subjectBean.setSubjectName("Amit Kumar");
-		
+
 		Subject subject = SAMLUtil.getSubject(subjectBean);
 		/* Create SubjectConfirmation Object */
 		// Create SubjectConfirmationDataBean
@@ -147,12 +159,12 @@ ResourceLoader resourceLoader;*/
 		SubjectConfirmation subjectConfirmation = SAMLUtil
 				.getSubjectConfirmation("urn:oasis:names:tc:SAML:2.0:cm:bearer", subjectConfirmationData);
 		subject.getSubjectConfirmations().add(subjectConfirmation);
-		
+
 		assertion.setSubject(subject);
 
 	}
 
-	public  void addConditionsToAssertion(Assertion assertion) {
+	public void addConditionsToAssertion(Assertion assertion) {
 		DateTime dateTime = new DateTime();
 		/* Create and add Conditions element to assertion */
 		// Initialize ConditionsBean
@@ -185,7 +197,7 @@ ResourceLoader resourceLoader;*/
 
 	}
 
-	public  void addAuthenticationStatement(Assertion assertion) {
+	public void addAuthenticationStatement(Assertion assertion) {
 		/* Create and add Authentication statement to assertion */
 		List<AuthenticationStatementBean> authBeans = new ArrayList<>();
 
@@ -202,7 +214,7 @@ ResourceLoader resourceLoader;*/
 		assertion.getAuthnStatements().addAll(authStatements);
 	}
 
-	public  void addSignatureToResponse(Response resp) throws Exception {
+	public void addSignatureToResponse(Response resp) throws Exception {
 		Signature signature = getSignature();
 		resp.setSignature(signature);
 
@@ -219,26 +231,29 @@ ResourceLoader resourceLoader;*/
 		}
 	}
 
-	public  Signature getSignature() throws Exception {
-		
-	//	InputStream filePath = resourceLoader.getResource("classpath:SAML/keystore.jks").getInputStream();
-		//System.out.println("amittttttt"+filePath.getClass().getClassLoader().getResourceAsStream("keystore.jks"));
-	//BufferedReader	reader = new BufferedReader(new InputStreamReader(filePath));
-		//System.out.println(reader.readLine().);
-		//System.out.println("path::::"+Paths.get("src/main/resorces/SAML/keystore.jks").toString());
-		
-		
-		/*ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		URL resource = classLoader.getResource("SAML/keystore.jks");
-		System.out.println("kdkwejd"+resource.getPath());
-		*/
-		KeyPair keyPair = PublicKeyUtil.getKeyPairFromKeyStore(utility.getKeyStoreFilePath(),utility.getKeyStorePassword(),utility.getKeyPassword(), utility.getKeyAlias());
+	public Signature getSignature() throws Exception {
+
+		// InputStream filePath =
+		// resourceLoader.getResource("classpath:SAML/keystore.jks").getInputStream();
+		// System.out.println("amittttttt"+filePath.getClass().getClassLoader().getResourceAsStream("keystore.jks"));
+		// BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
+		// System.out.println(reader.readLine().);
+		// System.out.println("path::::"+Paths.get("src/main/resorces/SAML/keystore.jks").toString());
+
+		/*
+		 * ClassLoader classLoader = Thread.currentThread().getContextClassLoader(); URL
+		 * resource = classLoader.getResource("SAML/keystore.jks");
+		 * System.out.println("kdkwejd"+resource.getPath());
+		 */
+		KeyPair keyPair = PublicKeyUtil.getKeyPairFromKeyStore(utility.getKeyStoreFilePath(),
+				utility.getKeyStorePassword(), utility.getKeyPassword(), utility.getKeyAlias());
 
 		PrivateKey pk = keyPair.getPrivate();
 
 		KeyStore ks = PublicKeyUtil.getKeyStore(utility.getKeyStoreFilePath(), utility.getKeyStorePassword());
 
-		X509Certificate certificate = PublicKeyUtil.getX509Certificate(ks, utility.getKeyAlias(), utility.getKeyPassword());
+		X509Certificate certificate = PublicKeyUtil.getX509Certificate(ks, utility.getKeyAlias(),
+				utility.getKeyPassword());
 
 		BasicX509Credential signingCredential = new BasicX509Credential();
 		signingCredential.setEntityCertificate(certificate);
@@ -261,7 +276,7 @@ ResourceLoader resourceLoader;*/
 		return signature;
 	}
 
-	public  void addSignatureToAssertion(Assertion assertion) throws Exception {
+	public void addSignatureToAssertion(Assertion assertion) throws Exception {
 
 		Signature signature = getSignature();
 

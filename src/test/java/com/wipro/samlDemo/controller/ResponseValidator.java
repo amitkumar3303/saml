@@ -14,39 +14,52 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import com.wipro.samlDemo.controller.X509CredentialImpl;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
+
 import org.opensaml.saml2.core.Response;
 import org.opensaml.xml.security.x509.BasicX509Credential;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureValidator;
 import org.opensaml.xml.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.stereotype.Component;
 
 import com.wipro.samlDemo.samlUtil.PublicKeyUtil;
 import com.wipro.samlDemo.util.Utilily;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class TestController {
-
-	@Autowired
-	SamlToken samlToken;
+@Component
+public class ResponseValidator {
 
 	@Autowired
 	Utilily utilily;
 
-	@Autowired
-	ResponseValidator responseValidator;
+	public boolean validateSignature(Response response) throws Exception {
+		Signature signValue = response.getAssertions().get(0).getSignature();
+		boolean booleanValue = validateSignature(signValue);
+		return booleanValue;
+	}
 
-	@Test
-	public void testCont() throws Exception {
+	private boolean validateSignature(Signature signature) throws Exception {
 
-		Response responseCont = samlToken.samlToken1();
-		assertTrue(responseValidator.validateSignature(responseCont));
+		boolean isSignatureValid = false;
+
+		try {
+			SignatureValidator validator = new SignatureValidator(getPublicX509CredentialImpl());
+			validator.validate(signature);
+			isSignatureValid = true;
+		} catch (ValidationException e) {
+			e.printStackTrace();
+		}
+
+		return isSignatureValid;
+	}
+
+	private X509CredentialImpl getPublicX509CredentialImpl() throws Exception {
+
+		X509CredentialImpl credentialImpl = null;
+		// load the default public cert using the configuration in carbon.xml
+		java.security.cert.X509Certificate cert = createBasicCredentials().getEntityCertificate();
+		credentialImpl = new X509CredentialImpl(cert);
+		return credentialImpl;
 
 	}
 
@@ -105,30 +118,4 @@ public class TestController {
 
 		return basicCredential;
 	}
-
-	private X509CredentialImpl getPublicX509CredentialImpl() throws Exception {
-
-		X509CredentialImpl credentialImpl = null;
-		// load the default public cert using the configuration in carbon.xml
-		java.security.cert.X509Certificate cert = createBasicCredentials().getEntityCertificate();
-		credentialImpl = new X509CredentialImpl(cert);
-		return credentialImpl;
-
-	}
-
-	private boolean validateSignature(Signature signature) throws Exception {
-
-		boolean isSignatureValid = false;
-
-		try {
-			SignatureValidator validator = new SignatureValidator(getPublicX509CredentialImpl());
-			validator.validate(signature);
-			isSignatureValid = true;
-		} catch (ValidationException e) {
-			e.printStackTrace();
-		}
-
-		return isSignatureValid;
-	}
-
 }
